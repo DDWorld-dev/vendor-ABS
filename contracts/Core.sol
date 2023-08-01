@@ -4,7 +4,6 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
 
 contract Core {
-    IERC20 usdtContract = IERC20(0xdAC17F958D2ee523a2206206994597C13D831ec7);
     address owner;
     mapping(address=>bool) public ownersBank;
     address public BANK;
@@ -24,7 +23,6 @@ contract Core {
         mapping(address=>uint) tokenBalance;
         uint balanceCredit;
     }
-    
     struct document{
         uint typeDocument;
         string documentInfo;
@@ -45,14 +43,16 @@ contract Core {
     function checkOwnerBank() public view returns(bool){
         return ownersBank[msg.sender];
     }
-
-    function transferBalance(uint amount, address token, address to, address sender) public{
-        require(clients[sender].clientOwner == sender, "not client2");
-        require(clients[to].clientOwner == to, "not client1");
+    modifier checkTransfer(address sender, address to) {
+        require(clients[sender].clientOwner == sender, "not client");
+        require(clients[to].clientOwner == to, "not client");
         require(msg.sender == BANK, "not bank");
         require(clients[sender].accountDebet == true, "not open account");
         require(clients[to].accountDebet == true, "not open account");
         require(clients[to].bank == clients[sender].bank, "different bank");
+        _;
+    }
+    function transferBalance(uint amount, address token, address to, address sender) public checkTransfer(sender, to){
         (, int256 price, , , ) = AggregatorV3Interface(oracles[token]).latestRoundData();
         require(price > 0, "Invalid price");
         unchecked {
@@ -63,7 +63,6 @@ contract Core {
             clients[to].tokenBalance[token] += amount;
             
         }
-       
     }
     function addNeworacle(address token, address _oracle) public onlyOwner(){
         oracles[token] = _oracle;
@@ -74,7 +73,7 @@ contract Core {
     
     function deposit(uint amount, address token, address sender) public {
         require(BANK == msg.sender, "not bank");
-        require(clients[sender].clientOwner == sender, "not client3");
+        require(clients[sender].clientOwner == sender, "not client");
         require(clients[sender].accountDebet == true, "not open account");
         require(IERC20(token).allowance(sender, address(this)) >= amount, "chek allowance");
         IERC20(token).transferFrom(sender, BANK, amount);
@@ -84,18 +83,17 @@ contract Core {
         clients[sender].tokenBalance[token] += amount;
 
     }
-
     function withdrawal(uint amount, address token, address oracle, address sender) public{
         require(BANK == msg.sender, "not bank");
         require(clients[sender].clientOwner == sender, "not client");
         require(clients[sender].accountDebet == true, "not open account");
-        IERC20(token).transfer(sender, amount);
+        require(IERC20(token).allowance(msg.sender, address(this)) >= amount, "chek allowance");
+        IERC20(token).transferFrom(msg.sender, sender, amount);
         (, int256 price, , , ) = AggregatorV3Interface(oracle).latestRoundData();
         require(price > 0, "Invalid price");
-        clients[sender].balanceUsdt -= amount * (uint(price)/100);
+        clients[sender].balanceUsdt -= (amount / 1000000) * (uint(price) / 100);
         clients[sender].tokenBalance[token] -= amount;
     }  
-
     function balanceTokenAccount(address tokenAddress, address oracle, address sender) public view returns(uint, uint){
         require(clients[sender].clientOwner == sender, "not client");
         uint balance = IERC20(tokenAddress).balanceOf(sender);
