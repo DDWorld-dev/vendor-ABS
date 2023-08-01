@@ -1,32 +1,29 @@
-// We require the Hardhat Runtime Environment explicitly here. This is optional
-// but useful for running the script in a standalone fashion through `node <script>`.
-//
-// You can also run a script with `npx hardhat run <script>`. If you do that, Hardhat
-// will compile your contracts, add the Hardhat Runtime Environment's members to the
-// global scope, and execute the script.
-const hre = require("hardhat");
+const hre = require('hardhat');
+const ethers = hre.ethers;
+
+const path = require('path');
 
 async function main() {
-  const currentTimestampInSeconds = Math.round(Date.now() / 1000);
-  const unlockTime = currentTimestampInSeconds + 60;
+  const [deployer] = await ethers.getSigners();
 
-  const lockedAmount = hre.ethers.utils.parseEther("0.001");
+  console.log("Deploying contracts with the account:", deployer.address);
 
-  const Lock = await hre.ethers.getContractFactory("Lock");
-  const lock = await Lock.deploy(unlockTime, { value: lockedAmount });
+  console.log("Account balance:", (await deployer.getBalance()).toString());
+  const ABS = await ethers.getContractFactory("Core", owner)
+  core = await ABS.deploy()
+  await core.deployed()
+  console.log("address:", core.address);
 
-  await lock.deployed();
-
-  console.log(
-    `Lock with ${ethers.utils.formatEther(
-      lockedAmount
-    )}ETH and unlock timestamp ${unlockTime} deployed to ${lock.address}`
-  );
 }
 
-// We recommend this pattern to be able to use async/await everywhere
-// and properly handle errors.
-main().catch((error) => {
-  console.error(error);
-  process.exitCode = 1;
-});
+// 0x0496275d34753A48320CA58103d5220d394FF77F - sepolia flash
+// 0xa97684ead0e402dC232d5A977953DF7ECBaB3CDb - polygon flash
+// 0xE592427A0AEce92De3Edee1F18E0157C05861564 - swap router uniswap
+// 0x1b02dA8Cb0d097eB8D57A175b88c7D8b47997506 - swap router sushi
+// 0xa5E0829CaCEd8fFDD4De3c43696c57F7D7A678ff - swap router quick
+main()
+  .then(() => process.exit(0))
+  .catch((error) => {
+    console.error(error)
+    process.exit(1)
+  }) 
