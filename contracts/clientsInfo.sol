@@ -136,6 +136,7 @@ contract ClientInfo {
         }
     }
     function transferBalanceInBank(address sender, address to, address token, uint amount, string memory inf) public{
+        updateBalanceInUSD(sender);
         (, int256 price, , , ) = AggregatorV3Interface(oracles[token]).latestRoundData();
         require(price > 0, "Invalid price");
         unchecked {
@@ -147,6 +148,33 @@ contract ClientInfo {
         }
         clients[sender].paymentInfo.push(payment(sender, to, inf, token, amount));
     }
+    function newTransfer(address fromBank, address toBank, address token, address toClient, uint amount) public{
+    
+        updateBalanceInUSD(toClient);
+        (, int256 price, , , ) = AggregatorV3Interface(oracles[token]).latestRoundData();
+        require(price > 0, "Invalid price");
+        uint amountAllowance = IERC20(token).allowance(fromBank, toBank);
+        require(amountAllowance >= amount, "Not approve");
+        IERC20(token).transferFrom(fromBank, toBank, amount);
+         unchecked {
+            clients[toClient].balanceUsdt[token] += amount * uint(price);
+            clients[toClient].tokenBalance[token] += amount;
+        }
+    }
+    function transferBalanceFromBank(address sender, address to, address clientInfoBank, address token, uint amount, string memory inf) public{
+        updateBalanceInUSD(sender);
+        (, int256 price, , , ) = AggregatorV3Interface(oracles[token]).latestRoundData();
+        require(price > 0, "Invalid price");
+        unchecked {
+            clients[sender].balanceUsdt[token] -= amount * uint(price);
+            clients[sender].tokenBalance[token] -= amount;
+        }
+        IERC20(token).approve(clientInfoBank, amount);
+        bytes4 selector = bytes4(keccak256("newTransfer(address,address,address,address,uint256)"));
+        (bool success, ) = clientInfoBank.call(abi.encodeWithSelector(selector, address(this), clientInfoBank, token, to, amount));
+        require(success, "faild");
+        clients[sender].paymentInfo.push(payment(sender, to, inf, token, amount));
+    }
     function invest(address sender, address token, uint amount) public{
         (, int256 price, , , ) = AggregatorV3Interface(oracles[token]).latestRoundData();
         require(price > 0, "Invalid price");
@@ -156,12 +184,19 @@ contract ClientInfo {
         clients[BANK].tokenBalance[token] += amount;
         clients[sender].paymentInfo.push(payment(sender, address(this), "deposit balance", token, amount));
     }
-     function depositBalance(address sender, address token, uint amount) public{
+    function depositBalance(address sender, address token, uint amount) public{
         (, int256 price, , , ) = AggregatorV3Interface(oracles[token]).latestRoundData();
         require(price > 0, "Invalid price");
         clients[sender].balanceUsdt[token] += amount * uint(price);
         clients[sender].tokenBalance[token] += amount;
         clients[sender].paymentInfo.push(payment(sender, address(this), "deposit balance", token, amount));
+    }
+    function getCredit(address token, uint amount) public onlyModules(msg.sender){
+        (, int256 price, , , ) = AggregatorV3Interface(oracles[token]).latestRoundData();
+        unchecked{
+            clients[BANK].balanceUsdt[token] -= amount * uint(price);
+            clients[BANK].tokenBalance[token] -= amount;
+        }
     }
     function withdrawlBalance(address sender, address token, uint amount) public{
         IERC20(token).transfer(sender, amount);
@@ -172,5 +207,8 @@ contract ClientInfo {
             clients[sender].tokenBalance[token] -= amount;
         }
         clients[sender].paymentInfo.push(payment(address(this), sender, "withdrawal balance", token, amount));
+    }
+    function balanceOf_(address token) public view returns(uint){
+        return IERC20(token).balanceOf(address(this));
     }
 }

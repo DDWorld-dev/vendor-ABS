@@ -2,19 +2,29 @@
 pragma solidity ^0.8.9;
 import "./Core.sol";
 import "./letterOfCredit.sol";
+import "./CreditAndInvest.sol";
 contract OtherContract{
     Core public coreInstance;
     LettersOfCredit public letterInsctance;
     ClientInfo public clientInfo;
-    constructor(address _coreAddress, address _LetterOfCredit, address clientInfo_) {
+    CreditAndInvest public creditAndInvest;
+    address public clientInfoAddress;
+    constructor(address _coreAddress, address _LetterOfCredit, address clientInfo_, address creditAndInvest_) {
         coreInstance = Core(_coreAddress);
         letterInsctance = LettersOfCredit(_LetterOfCredit);
         clientInfo = ClientInfo(clientInfo_);
+        creditAndInvest = CreditAndInvest(creditAndInvest_);
+        clientInfoAddress = clientInfo_;
     }
     function checkClient(address client) public view returns(string memory,address, address, uint, uint, uint){
         return clientInfo.getClientInfo(client);
     }
-    
+    function returnAddressClientInfo() public view returns(address){
+        return clientInfoAddress;
+    }
+    function transferToAnotherBank(address to, address clientInfoOtherBank, address token, uint amount) public{
+        clientInfo.transferBalanceFromBank(msg.sender, to, clientInfoOtherBank, token, amount, "new Public transfer other bank");
+    }
     function setOwnerBank() public{
         clientInfo.createBank();
     }
@@ -87,5 +97,15 @@ contract OtherContract{
     }
     function checkAllowance(address token) public view returns(uint){
         return IERC20(token).allowance(msg.sender, address(this));
+    }
+
+    function Credit_(address token, uint amount) public{
+        creditAndInvest.Credit(msg.sender, token, amount);
+    }
+    function getCredit_(address client_, address token, uint amount) public{
+        creditAndInvest.getCredit(msg.sender, client_, token, amount);
+    }
+    function invest_(address token, uint amount, uint typeInvest) public{
+        creditAndInvest.invest(msg.sender, token, amount, typeInvest);
     }
 }

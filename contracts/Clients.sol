@@ -3,13 +3,12 @@ pragma solidity ^0.8.9;
 
 import "./clientsInfo.sol";
 
-
 contract CreateClients{
     ClientInfo public clientInfo;
-    address letterOfCreditAddress;
+    address clientsInfoAddress;
     constructor(address clientInfo_){
         clientInfo = ClientInfo(clientInfo_);
-        letterOfCreditAddress = clientInfo_;
+        clientsInfoAddress = clientInfo_;
     }
     modifier onlyOwnerBank(address sender) {
         require(clientInfo.ownersBank(sender) == true, "Not an owner bank");

@@ -37,7 +37,7 @@ contract Core is CreateClients{
         require(debet == true, "not open account");
         require(IERC20(token).allowance(sender, address(this)) >= amount, "chek allowance");
         clientInfo.updateBalanceInUSD(sender);
-        IERC20(token).transferFrom(sender, letterOfCreditAddress, amount);
+        IERC20(token).transferFrom(sender, clientsInfoAddress, amount);
         clientInfo.depositBalance(sender, token, amount);
     }
     function withdrawal(uint amount, address token, address sender) public{
@@ -49,35 +49,5 @@ contract Core is CreateClients{
         clientInfo.updateBalanceInUSD(sender);
         clientInfo.withdrawlBalance(sender, token, amount);
     }  
-    
-    // function makeLettersOfCredit_(address sender, address recipient, uint amount, address token, string calldata contitions) public {
-    //     require(clients[sender].clientOwner == sender, "not client");
-    //     require(clients[recipient].clientOwner == recipient, "not client");
-    //     updateBalanceInUSD(sender);
-    //     letterOfCredit.makeLettersOfCredit(sender, clients[sender].bank, clients[sender].tokenBalance[token], clients[sender].balanceUsdt[token], oracles[token],  recipient, amount, token, contitions);
-    // }
-    // function confirmLetterOfCredit_(address sender) public{
-    //     letterOfCredit.confirmLetterOfCredit(sender, msg.sender);
-    // }
-    // function sendLettersOfCredit_(address sender) public{
-    //     letterOfCredit.sendLettersOfCredit(sender);
-    // }
-      
-    // function getClientInfo21(address sender) public view returns(string memory,address, address, uint, uint, uint){
-    //     return letterOfCredit.getClientInfo12(sender);
-    // }
-    // function checkLetterOfCredit_(address sender) public{
-    //     letterOfCredit.checkLetterOfCredit(sender);
-    // }
-    // function sendMoney_(address sender) public{
-    //     letterOfCredit.sendMoney(sender);
-    // }
-    // function compliteLetterOfCredit_(address sender) public{
-    //     letterOfCredit.compliteLetterOfCredit(sender);
-    // }
-
-    // function checkLetter_(address sender) public view returns(address, address, uint, address, string memory, uint){
-    //     return letterOfCredit.checkLetter(sender);
-    // }  
 
 }
